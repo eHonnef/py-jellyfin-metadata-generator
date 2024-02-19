@@ -7,8 +7,9 @@
   <year></year>
   <premiered></premiered>
   <releasedate></releasedate>
-  <art>
-    <poster>/media/series/eu-a patroa-e as crianças/5a temporada/folder.jpg</poster>
-  </art>
+  <enddate></enddate>
   <seasonnumber></seasonnumber>
+  <art>
+    <poster>/path/to/season/metadata/folder.jpg</poster>
+  </art>
 </season>

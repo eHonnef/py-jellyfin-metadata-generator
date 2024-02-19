@@ -2,13 +2,13 @@
 <episodedetails>
     <lockdata>true</lockdata>
     <title></title>
-    <season></season>    <!-- Required for multi-episode files only -->
-    <episode></episode>  <!-- Required for multi-episode files only -->
+    <season></season>
+    <episode></episode>
     <plot></plot>
-    <uniqueid type="" default="true"></uniqueid>  <!-- add a value to type="" eg imdb, tmdb, home, sport, docu, see sample below -->
-    <aired></aired>       <!-- yyyy-mm-dd -->
+    <aired></aired>
     <dateadded></dateadded>
+    <year></year>
     <art>
-    <poster>/media/series/eu-a patroa-e as crianças/5a temporada/metadata/eu-a patroa-e as crianças - s05e1.jpg</poster>
+    <poster>/path/to/season/metadata/episode name.jpg</poster>
   </art>
 </episodedetails>
