@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<episodedetails>
+    <lockdata>true</lockdata>
+    <title></title>
+    <season></season>    <!-- Required for multi-episode files only -->
+    <episode></episode>  <!-- Required for multi-episode files only -->
+    <plot></plot>
+    <uniqueid type="" default="true"></uniqueid>  <!-- add a value to type="" eg imdb, tmdb, home, sport, docu, see sample below -->
+    <aired></aired>       <!-- yyyy-mm-dd -->
+    <dateadded></dateadded>
+    <art>
+    <poster>/media/series/eu-a patroa-e as crianças/5a temporada/metadata/eu-a patroa-e as crianças - s05e1.jpg</poster>
+  </art>
+</episodedetails>
