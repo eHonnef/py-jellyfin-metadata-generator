@@ -1,3 +1,8 @@
+# Copyright (C) 2024 eHonnef <contact@honnef.net>
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 import os
 import shutil
 
@@ -23,28 +28,47 @@ database = Database()
 
 
 class RoundInfo:
-    def __init__(self, season, round_number, date, time, race_name, circuit_id, sprint_date=None):
+
+    def __init__(self, season, round, date, race_name, circuit_id, sprint_dateTime, fp1_dateTime, fp2_dateTime,
+                 fp3_dateTime, quali_dateTime):
+        """
+        The parameters list here are the ones expected in the kwargs
+
+        :param season: the season number
+        :param round: the round number
+        :param date: date that the round happened
+        :param race_name: race name
+        :param circuit_id: circuit id
+        :param sprint_dateTime: sprint date and time, as defined in the iso8601
+        :param fp1_dateTime: fp1 date and time, as defined in the iso8601
+        :param fp2_dateTime: fp2 date and time, as defined in the iso8601
+        :param fp3_dateTime: fp3 date and time, as defined in the iso8601
+        :param quali_dateTime: qualification datetime, as defined in the iso8601
+        """
         self.season = season
-        self.round = round_number
-        self.circuit_id = circuit_id
-
+        self.round = round
         self.date = date
-        self.time = time
-
         self.race_name = race_name
+        self.circuit_id = circuit_id
+        self.sprint_dateTime = sprint_dateTime
+        self.fp1_dateTime = fp1_dateTime
+        self.fp2_dateTime = fp2_dateTime
+        self.fp3_dateTime = fp3_dateTime
+        self.quali_dateTime = quali_dateTime
+
         # self.race_description = wikipedia.summary(f"{season} {race_name}")
         self.race_description = self._get_round_info()
-
-        self.sprint_date = sprint_date
 
     def __str__(self):
         return (f"Season: {self.season}; "
                 f"Round: {self.round}; "
                 f"Date: {self.date}; "
-                f"Time: {self}; "
                 f"Race: {self.race_name}; "
-                f"SprintDate: {self.sprint_date}; "
-                f"SprintTime: {self}"
+                f"SprintDate: {self.sprint_dateTime}; "
+                f"FP1Date: {self.fp1_dateTime}; "
+                f"FP2Date: {self.fp2_dateTime}; "
+                f"FP3Date: {self.fp3_dateTime}; "
+                f"QualiDate: {self.quali_dateTime}; "
                 f"\n{self.race_description}")
 
     def _get_round_info(self):
@@ -152,20 +176,21 @@ class Fetchnator:
         self.api_base = api
 
     def get_round_info(self, year: int, round_number: int) -> RoundInfo:
-        res = requests.get(
-            f"{self.api_base}/{year}/{round_number}.json"
-        )
-        res.raise_for_status()
-
-        race_table = json.loads(res.content)["MRData"]["RaceTable"]
-        race = race_table["Races"][0]
-
-        sprint_date = None
-        if "Sprint" in race:
-            sprint_date = race["Sprint"]["date"]
-
-        return RoundInfo(race_table["season"], race_table["round"], race["date"], race["time"], race["raceName"],
-                         race["Circuit"]["circuitId"], sprint_date)
+        # res = requests.get(
+        #     f"{self.api_base}/{year}/{round_number}.json"
+        # )
+        # res.raise_for_status()
+        #
+        # race_table = json.loads(res.content)["MRData"]["RaceTable"]
+        # race = race_table["Races"][0]
+        #
+        # sprint_date = None
+        # if "Sprint" in race:
+        #     sprint_date = race["Sprint"]["date"]
+        #
+        # return RoundInfo(race_table["season"], race_table["round"], race["date"], race["raceName"],
+        #                  race["Circuit"]["circuitId"], sprint_date)
+        raise NotImplemented("Not implemented")
 
     def get_season_info(self, year: int) -> Season:
         res = requests.get(
@@ -178,10 +203,33 @@ class Fetchnator:
         season = Season(race_table["season"], races[0]["date"], races[-1]["date"])
 
         for race in races:
-            sprint_date = None
+            obj_params = {
+                "season": race["season"],
+                "round": race["round"],
+                "date": f"{race["date"]}T{race["time"]}",
+                "race_name": race["raceName"],
+                "circuit_id": race["Circuit"]["circuitId"],
+                "sprint_dateTime": "",
+                "fp1_dateTime": "",
+                "fp2_dateTime": "",
+                "fp3_dateTime": "",
+                "quali_dateTime": "",
+            }
             if "Sprint" in race:
-                sprint_date = race["Sprint"]["date"]
-            season.add_round(RoundInfo(race["season"], race["round"], race["date"], race["time"], race["raceName"],
-                                       race["Circuit"]["circuitId"], sprint_date))
+                obj_params["sprint_dateTime"] = f"{race["Sprint"]["date"]}T{race["Sprint"]["time"]}"
+
+            if "FirstPractice" in race:
+                obj_params["fp1_dateTime"] = f"{race["FirstPractice"]["date"]}T{race["FirstPractice"]["time"]}"
+
+            if "SecondPractice" in race:
+                obj_params["fp2_dateTime"] = f"{race["SecondPractice"]["date"]}T{race["SecondPractice"]["time"]}"
+
+            if "ThirdPractice" in race:
+                obj_params["fp3_dateTime"] = f"{race["ThirdPractice"]["date"]}T{race["ThirdPractice"]["time"]}"
+
+            if "Qualifying" in race:
+                obj_params["quali_dateTime"] = f"{race["Qualifying"]["date"]}T{race["Qualifying"]["time"]}"
+
+            season.add_round(RoundInfo(**obj_params))
 
         return season
