@@ -29,13 +29,13 @@ database = Database()
 
 class RoundInfo:
 
-    def __init__(self, season, round, date, race_name, circuit_id, sprint_dateTime, fp1_dateTime, fp2_dateTime,
+    def __init__(self, season, f1_round, date, race_name, circuit_id, sprint_dateTime, fp1_dateTime, fp2_dateTime,
                  fp3_dateTime, quali_dateTime):
         """
         The parameters list here are the ones expected in the kwargs
 
         :param season: the season number
-        :param round: the round number
+        :param f1_round: the round number
         :param date: date that the round happened
         :param race_name: race name
         :param circuit_id: circuit id
@@ -46,7 +46,7 @@ class RoundInfo:
         :param quali_dateTime: qualification datetime, as defined in the iso8601
         """
         self.season = season
-        self.round = round
+        self.round = f1_round
         self.date = date
         self.race_name = race_name
         self.circuit_id = circuit_id
@@ -174,6 +174,8 @@ class Season:
 class Fetchnator:
     def __init__(self, api="http://ergast.com/api/f1"):
         self.api_base = api
+        # Test API connection
+        requests.get(f"{self.api_base}/2011.json").raise_for_status()
 
     def get_round_info(self, year: int, round_number: int) -> RoundInfo:
         # res = requests.get(
@@ -206,7 +208,7 @@ class Fetchnator:
             obj_params = {
                 "season": race["season"],
                 "round": race["round"],
-                "date": f"{race["date"]}T{race["time"]}",
+                "date": f"{race['date']}T{race['time']}",
                 "race_name": race["raceName"],
                 "circuit_id": race["Circuit"]["circuitId"],
                 "sprint_dateTime": "",
@@ -216,19 +218,19 @@ class Fetchnator:
                 "quali_dateTime": "",
             }
             if "Sprint" in race:
-                obj_params["sprint_dateTime"] = f"{race["Sprint"]["date"]}T{race["Sprint"]["time"]}"
+                obj_params["sprint_dateTime"] = f"{race['Sprint']['date']}T{race['Sprint']['time']}"
 
             if "FirstPractice" in race:
-                obj_params["fp1_dateTime"] = f"{race["FirstPractice"]["date"]}T{race["FirstPractice"]["time"]}"
+                obj_params["fp1_dateTime"] = f"{race['FirstPractice']['date']}T{race['FirstPractice']['time']}"
 
             if "SecondPractice" in race:
-                obj_params["fp2_dateTime"] = f"{race["SecondPractice"]["date"]}T{race["SecondPractice"]["time"]}"
+                obj_params["fp2_dateTime"] = f"{race['SecondPractice']['date']}T{race['SecondPractice']['time']}"
 
             if "ThirdPractice" in race:
-                obj_params["fp3_dateTime"] = f"{race["ThirdPractice"]["date"]}T{race["ThirdPractice"]["time"]}"
+                obj_params["fp3_dateTime"] = f"{race['ThirdPractice']['date']}T{race['ThirdPractice']['time']}"
 
             if "Qualifying" in race:
-                obj_params["quali_dateTime"] = f"{race["Qualifying"]["date"]}T{race["Qualifying"]["time"]}"
+                obj_params["quali_dateTime"] = f"{race['Qualifying']['date']}T{race['Qualifying']['time']}"
 
             season.add_round(RoundInfo(**obj_params))
 

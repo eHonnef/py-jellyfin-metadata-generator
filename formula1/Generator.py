@@ -21,7 +21,12 @@ class Generator:
     def __init__(self, base_folder: str, mapped_dir: str) -> None:
         self.base_folder = base_folder
         self.mapped_dir = mapped_dir
-        self.fetchnator = Fetchnator()
+        try:
+            generator_logger.warning("Checking if API is available")
+            self.fetchnator = Fetchnator()
+        except:
+            generator_logger.fatal("Could not fetch test data from API, exiting...")
+            exit(0)
         self.config = json.load(open(f"{os.path.dirname(generator_module_path)}/config.json", "r"))
 
     def run(self) -> None:
@@ -37,14 +42,15 @@ class Generator:
                 generator_logger.debug(f"Round files: {rounds_files}")
 
                 round_metadata_files = list(
-                    filter(re.compile(f".*{self.config["metadata_extension"]}$").match, rounds_files))
+                    filter(re.compile(f".*{self.config['metadata_extension']}$").match, rounds_files))
                 rounds_files = list(set(rounds_files) - set(round_metadata_files))
 
                 # Check which round file is missing its metadata
                 round_with_missing_metadata = []
                 for round_file in rounds_files:
                     if not os.path.isdir(os.path.join(season_dir_path, round_file)):
-                        if f"{os.path.splitext(round_file)[0]}{self.config["metadata_extension"]}" not in round_metadata_files:
+                        if (f"{os.path.splitext(round_file)[0]}{self.config['metadata_extension']}"
+                                not in round_metadata_files):
                             generator_logger.info(f"Round file doesn't have metadata: {round_file}")
                             round_with_missing_metadata.append(round_file)
 
@@ -56,7 +62,7 @@ class Generator:
                     # Expected format <whatever> - sXXXXeYY - <whatever>
                     for round_file_name in round_with_missing_metadata:
                         if not os.path.isdir(f"{season_dir_path}/{round_file_name}"):
-                            parsed_season = re.findall(rf"{self.config["season_episode_format"]}",
+                            parsed_season = re.findall(rf"{self.config['season_episode_format']}",
                                                        round_file_name,
                                                        flags=re.IGNORECASE)
                             if not parsed_season:
@@ -73,12 +79,12 @@ class Generator:
                                 season_obj.to_xml(f"{season_dir_path}/season.nfo",
                                                   f"{self.mapped_dir}/{season_dir}")
 
-                            is_sprint = re.findall(rf"{self.config["sprint"]}", round_file_name, flags=re.IGNORECASE)
-                            is_quali = re.findall(rf"{self.config["quali"]}", round_file_name, flags=re.IGNORECASE)
-                            is_fp1 = re.findall(rf"{self.config["fp1"]}", round_file_name, flags=re.IGNORECASE)
-                            is_fp2 = re.findall(rf"{self.config["fp2"]}", round_file_name, flags=re.IGNORECASE)
-                            is_fp3 = re.findall(rf"{self.config["fp3"]}", round_file_name, flags=re.IGNORECASE)
-                            is_fp = re.findall(rf"{self.config["freePractice"]}", round_file_name, flags=re.IGNORECASE)
+                            is_sprint = re.findall(rf"{self.config['sprint']}", round_file_name, flags=re.IGNORECASE)
+                            is_quali = re.findall(rf"{self.config['quali']}", round_file_name, flags=re.IGNORECASE)
+                            is_fp1 = re.findall(rf"{self.config['fp1']}", round_file_name, flags=re.IGNORECASE)
+                            is_fp2 = re.findall(rf"{self.config['fp2']}", round_file_name, flags=re.IGNORECASE)
+                            is_fp3 = re.findall(rf"{self.config['fp3']}", round_file_name, flags=re.IGNORECASE)
+                            is_fp = re.findall(rf"{self.config['freePractice']}", round_file_name, flags=re.IGNORECASE)
 
                             no_ext_round = os.path.splitext(round_file_name)[0]
                             generator_logger.info(f"Getting round number={int(round_number)}")
@@ -97,7 +103,7 @@ class Generator:
                             elif is_fp:
                                 generator_logger.info("Free practice round")
                                 round_name = s_round.race_name + "- Free practice"
-                                round_date = s_round.fp1_dateTime # will use the first practice date and time
+                                round_date = s_round.fp1_dateTime  # will use the first practice date and time
                             elif is_fp1:
                                 generator_logger.info("Free practice 1 round")
                                 round_name = s_round.race_name + "- Free practice 1"
