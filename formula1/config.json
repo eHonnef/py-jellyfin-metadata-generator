@@ -1,0 +1,11 @@
+{
+  "freePractice": "free practice",
+  "fp1": "fp1",
+  "fp2": "fp2",
+  "fp3": "fp3",
+  "quali": "qualification",
+  "sprint": "sprint",
+  "metadata_extension": ".nfo",
+  "season_metadata": "season.nfo",
+  "season_episode_format": "s[0-9]*e[0-9]*"
+}
