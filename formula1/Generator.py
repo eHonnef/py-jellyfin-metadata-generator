@@ -71,9 +71,10 @@ class Generator:
                             season_number, round_number = re.findall(r"[0-9]+", parsed_season)
                             generator_logger.info(f"Checking for season={season_number}; round={round_number}")
 
-                            if (season_obj is None) and (not contains_season_metadata):
+                            if season_obj is None:
                                 generator_logger.info(f"Fething full Season={season_number} info")
                                 season_obj = self.fetchnator.get_season_info(season_number)
+                            if not contains_season_metadata:
                                 season_obj.get_season_poster()
                                 generator_logger.info("Saving season to xml")
                                 season_obj.to_xml(f"{season_dir_path}/season.nfo",

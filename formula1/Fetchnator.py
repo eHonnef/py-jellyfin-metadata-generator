@@ -207,7 +207,7 @@ class Fetchnator:
         for race in races:
             obj_params = {
                 "season": race["season"],
-                "round": race["round"],
+                "f1_round": race["round"],
                 "date": f"{race['date']}T{race['time']}",
                 "race_name": race["raceName"],
                 "circuit_id": race["Circuit"]["circuitId"],
