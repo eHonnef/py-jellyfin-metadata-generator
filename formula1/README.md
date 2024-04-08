@@ -83,22 +83,32 @@ Your folder will become something like:
 
 - Check the help section: `python3 Main.py -h`
 - Example: `python3 Main.py /path/to/my/f1/library`
-- Are you using a docker container for Jellyfin? Then: `python3 Main.py /path/to/my/f1/library --mapped-folder /media/shows/f1`
+- Are you using a docker container for Jellyfin?
+  Then: `python3 Main.py /path/to/my/f1/library --mapped-folder /media/shows/f1`
+- Don't like the webp format? Add `--convert-to-jpg`. **Requires [Pillow](https://pypi.org/project/pillow/) to work**.
+    - Example: `python3 Main.py /path/to/my/f1/library --mapped-folder /media/shows/f1 --convert-to-jpg`
+    - Example: `python3 Main.py /path/to/my/f1/library --convert-to-jpg`
 
 ### Configuration file
 
 This is some configuration for your library, in case you are using something different from mine.
 Check the `config.json` file, each value is:
 
-- `freePractice`: The string that identify that your video is a free practice, this is in case where all the practices are in a single video. E.g.: `Formula 1 - s2023e20 - Sao Paulo Grand Prix - free practice 2160p50.mp4`
-- `fp1`: The string that identify that your video is a free practice 1. E.g.: `Formula 1 - s2023e20 - Sao Paulo Grand Prix - fp1 2160p50.mp4`
+- `freePractice`: The string that identify that your video is a free practice, this is in case where all the practices
+  are in a single video. E.g.: `Formula 1 - s2023e20 - Sao Paulo Grand Prix - free practice 2160p50.mp4`
+- `fp1`: The string that identify that your video is a free practice 1.
+  E.g.: `Formula 1 - s2023e20 - Sao Paulo Grand Prix - fp1 2160p50.mp4`
 - `fp2`: basically the same as `fp1`
 - `fp3`: basically the same as `fp1`
-- `quali`: The string that identify that your video is a qualification session. E.g.: `Formula 1 - s2023e20 - Sao Paulo Grand Prix - qualification 2160p50.mp4`
-- `sprint`: The string that identify that your video is a sprint race. E.g.: `Formula 1 - s2023e20 - Sao Paulo Grand Prix - Sprint 2160p50.mp4`
+- `quali`: The string that identify that your video is a qualification session.
+  E.g.: `Formula 1 - s2023e20 - Sao Paulo Grand Prix - qualification 2160p50.mp4`
+- `sprint`: The string that identify that your video is a sprint race.
+  E.g.: `Formula 1 - s2023e20 - Sao Paulo Grand Prix - Sprint 2160p50.mp4`
 - `metadata_extension`: The metadata file extension, default `.nfo`
-- `season_metadata`: The season metadata file, it is used to check if we need to create this file or not. Default `season.nfo`.
-- `season_episode_format`: A regex string to identify the season and episode format, for example, to identify the sub-string `s2013e10`. You don't have to change this if this is the format of your rounds file name.
+- `season_metadata`: The season metadata file, it is used to check if we need to create this file or not.
+  Default `season.nfo`.
+- `season_episode_format`: A regex string to identify the season and episode format, for example, to identify the
+  sub-string `s2013e10`. You don't have to change this if this is the format of your rounds file name.
 
 Note: The identification strings are case-insensitive, i.e. "FP1" is the same as "fp1".
 
@@ -107,15 +117,28 @@ Note: The identification strings are case-insensitive, i.e. "FP1" is the same as
 - Nothing besides the standard python lib
 - Tested with python 12+. Maybe it will run on older versions.
 
-## Roadmap
+> **If you want to use `--convert-to-jpg`, you need to install Pillow:**
+
+```shell
+pip install Pillow
+```
+
+## Things that I know that need to be done
 
 - Add a decent Wikipedia API request.
 - Add support for different languages from Wikipedia.
-- Add error handling
+- Find a new API since ergast is about to end :(
+- Generate the show metadata `tvshow.nfo`. As a workaround you can try to ask jellyfin to fetch it.
+- Fetch the season poster. For now, add it manually using one of the posters in the link below, or ask jellyfin to fetch
+  one, it will be the generic F1 one.
 
 # References
 
-- https://www.reddit.com/r/PleX/comments/tdzp8x/formula_1_library_with_automatic_metadata/
+- Inspiration: https://www.reddit.com/r/PleX/comments/tdzp8x/formula_1_library_with_automatic_metadata/
+    - Author's artwork: https://nx37606.your-storageshare.de/s/LjpsnTAMyTmiBS9
+        - Comment: https://www.reddit.com/r/PleX/comments/tdzp8x/formula_1_library_with_automatic_metadata/kdvd7lh/
+    - More recent artwork: https://imgur.com/a/7LOoCv6
+        - Comment: https://www.reddit.com/r/PleX/comments/tdzp8x/formula_1_library_with_automatic_metadata/i0q0s6x/
 - nfo file doc: https://jellyfin.org/docs/general/server/metadata/nfo/
 - Show library doc: https://jellyfin.org/docs/general/server/media/shows
 - API: http://ergast.com/mrd/
@@ -123,4 +146,5 @@ Note: The identification strings are case-insensitive, i.e. "FP1" is the same as
 
 # License
 
-The Source Code in this repository is subject to the terms of the Mozilla Public License, v. 2.0. Check the [LICENSE](../LICENSE) file for more information or at https://mozilla.org/MPL/2.0/
+The Source Code in this repository is subject to the terms of the Mozilla Public License, v. 2.0. Check
+the [LICENSE](../LICENSE) file for more information or at https://mozilla.org/MPL/2.0/

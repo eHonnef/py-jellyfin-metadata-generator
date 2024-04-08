@@ -4,19 +4,38 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import os
-import shutil
-
 import requests
 import json
 # import wikipedia
 import inspect
 import xml.etree.ElementTree as ET
 from datetime import date
+from datetime import datetime
 import logging
 
 fetchnator_logger = logging.getLogger('Fetchnator')
 
 module_path = inspect.getfile(inspect.currentframe())
+
+
+class ImageConvertor:
+    DONT = ""
+    JPG = "JPG"
+
+    @staticmethod
+    def convert_webp_to_jpg(input_http_response: requests.Response) -> bytes | None:
+        from PIL import Image
+        from io import BytesIO
+
+        jpg_data = None
+
+        with BytesIO(input_http_response.content) as stream:
+            im = Image.open(stream)
+            jpg_stream = BytesIO()
+            im.save(jpg_stream, format="jpeg")
+            jpg_data = jpg_stream.getvalue()
+
+        return jpg_data
 
 
 class Database:
@@ -29,14 +48,14 @@ database = Database()
 
 class RoundInfo:
 
-    def __init__(self, season, f1_round, date, race_name, circuit_id, sprint_dateTime, fp1_dateTime, fp2_dateTime,
+    def __init__(self, season, f1_round, round_date, race_name, circuit_id, sprint_dateTime, fp1_dateTime, fp2_dateTime,
                  fp3_dateTime, quali_dateTime):
         """
         The parameters list here are the ones expected in the kwargs
 
         :param season: the season number
         :param f1_round: the round number
-        :param date: date that the round happened
+        :param round_date: date that the round happened
         :param race_name: race name
         :param circuit_id: circuit id
         :param sprint_dateTime: sprint date and time, as defined in the iso8601
@@ -47,7 +66,7 @@ class RoundInfo:
         """
         self.season = season
         self.round = f1_round
-        self.date = date
+        self.date = round_date
         self.race_name = race_name
         self.circuit_id = circuit_id
         self.sprint_dateTime = sprint_dateTime
@@ -87,7 +106,7 @@ class RoundInfo:
         page_key = list(json.loads(res.content)["query"]["pages"].keys())[0]
         return json.loads(res.content)["query"]["pages"][page_key]["extract"]
 
-    def to_xml(self, xml_filename, mapped_dir, round_filename, title, aired):
+    def to_xml(self, xml_filename, mapped_dir, round_filename, title, aired, artwork_img_ext):
         round_xml = ET.parse(f"{os.path.dirname(module_path)}/nfo-template/episode.nfo")
         round_xml.getroot().findall("./title")[0].text = title
         round_xml.getroot().findall("./season")[0].text = self.season
@@ -97,16 +116,18 @@ class RoundInfo:
         round_xml.getroot().findall("./dateadded")[0].text = date.today().isoformat()
         round_xml.getroot().findall("./year")[0].text = self.season
         round_xml.getroot().findall("./art/poster")[
-            0].text = f"{mapped_dir}/metadata/{round_filename}.webp"
+            0].text = f"{mapped_dir}/metadata/{round_filename}{artwork_img_ext}"
 
         round_xml.write(xml_filename)
 
-    def get_round_poster(self, filename):
-        circuit_id = f"{self.date}-{self.circuit_id}"
-        if f"{self.date}-{self.circuit_id}" in database.database.keys():
-            circuit_id = database.database[f"{self.date}-{self.circuit_id}"]
+    def get_round_poster(self, filename: str, convert: str):
+        round_date = datetime.strftime(datetime.fromisoformat(self.date), "%Y-%m-%d")
+
+        circuit_id = f"{round_date}-{self.circuit_id}"
+        if f"{round_date}-{self.circuit_id}" in database.database.keys():
+            circuit_id = database.database[f"{round_date}-{self.circuit_id}"]
         elif self.circuit_id in database.database.keys():
-            circuit_id = f"{self.date}-{database.database[self.circuit_id]}"
+            circuit_id = f"{round_date}-{database.database[self.circuit_id]}"
         fetchnator_logger.info(
             f"fetching url=https://www.eventartworks.de/images/f1@1200/{circuit_id}.webp")
         resp = requests.get(f"https://www.eventartworks.de/images/f1@1200/{circuit_id}.webp",
@@ -114,8 +135,12 @@ class RoundInfo:
         resp.raise_for_status()
 
         if resp.headers["Content-Type"] == "image/webp":
+            image_bytes = resp.content
+            if convert == ImageConvertor.JPG:
+                filename = os.path.splitext(filename)[0] + ".jpg"
+                image_bytes = ImageConvertor.convert_webp_to_jpg(resp)
             with open(filename, "wb") as out_image:
-                shutil.copyfileobj(resp.raw, out_image)
+                out_image.write(image_bytes)
         else:
             fetchnator_logger.warning(
                 f"Invalid url=https://www.eventartworks.de/images/f1@1200/{circuit_id}.webp\n"
@@ -138,7 +163,7 @@ class Season:
     def get_round(self, index) -> RoundInfo:
         return self.rounds[index]
 
-    def to_xml(self, filename: str, mapped_dir):
+    def to_xml(self, filename: str, mapped_dir, artwork_img_ext):
         season_xml = ET.parse(f"{os.path.dirname(module_path)}/nfo-template/season.nfo")
         season_xml.getroot().findall("./plot")[0].text = self.season_info
         season_xml.getroot().findall("./dateadded")[0].text = date.today().isoformat()
@@ -147,7 +172,7 @@ class Season:
         season_xml.getroot().findall("./premiered")[0].text = self.start_date
         season_xml.getroot().findall("./enddate")[0].text = self.end_date
         season_xml.getroot().findall("./seasonnumber")[0].text = self.season
-        season_xml.getroot().findall("./art/poster")[0].text = f"{mapped_dir}/folder.jpg"
+        season_xml.getroot().findall("./art/poster")[0].text = f"{mapped_dir}/folder{artwork_img_ext}"
 
         season_xml.write(filename)
 
@@ -195,6 +220,12 @@ class Fetchnator:
         raise NotImplemented("Not implemented")
 
     def get_season_info(self, year: int) -> Season:
+        def format_race_dict_date_time(race_dict: dict, key: str) -> str:
+            rtn_str = f"{race_dict[key]['date']}"
+            if "time" in race_dict[key]:
+                rtn_str = f"{rtn_str}T{race_dict[key]['time']}"
+            return rtn_str
+
         res = requests.get(
             f"{self.api_base}/{year}.json"
         )
@@ -208,7 +239,7 @@ class Fetchnator:
             obj_params = {
                 "season": race["season"],
                 "f1_round": race["round"],
-                "date": f"{race['date']}T{race['time']}",
+                "round_date": f"{race['date']}T{race['time']}",
                 "race_name": race["raceName"],
                 "circuit_id": race["Circuit"]["circuitId"],
                 "sprint_dateTime": "",
@@ -218,19 +249,19 @@ class Fetchnator:
                 "quali_dateTime": "",
             }
             if "Sprint" in race:
-                obj_params["sprint_dateTime"] = f"{race['Sprint']['date']}T{race['Sprint']['time']}"
+                obj_params["sprint_dateTime"] = format_race_dict_date_time(race, "Sprint")
 
             if "FirstPractice" in race:
-                obj_params["fp1_dateTime"] = f"{race['FirstPractice']['date']}T{race['FirstPractice']['time']}"
+                obj_params["fp1_dateTime"] = format_race_dict_date_time(race, "FirstPractice")
 
             if "SecondPractice" in race:
-                obj_params["fp2_dateTime"] = f"{race['SecondPractice']['date']}T{race['SecondPractice']['time']}"
+                obj_params["fp2_dateTime"] = format_race_dict_date_time(race, "SecondPractice")
 
             if "ThirdPractice" in race:
-                obj_params["fp3_dateTime"] = f"{race['ThirdPractice']['date']}T{race['ThirdPractice']['time']}"
+                obj_params["fp3_dateTime"] = format_race_dict_date_time(race, "ThirdPractice")
 
             if "Qualifying" in race:
-                obj_params["quali_dateTime"] = f"{race['Qualifying']['date']}T{race['Qualifying']['time']}"
+                obj_params["quali_dateTime"] = format_race_dict_date_time(race, "Qualifying")
 
             season.add_round(RoundInfo(**obj_params))
 

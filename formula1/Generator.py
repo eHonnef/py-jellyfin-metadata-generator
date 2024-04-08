@@ -4,27 +4,29 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import json
-
-from Fetchnator import Fetchnator
+import requests
 import os
 import re
 import logging
 import inspect
+from Fetchnator import Fetchnator, ImageConvertor
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.WARNING, format='%(levelname)-8s :: %(message)s')
+
 generator_logger = logging.getLogger("Generator")
-generator_logger.setLevel(logging.WARNING)
+generator_logger.setLevel(logging.INFO)
 generator_module_path = inspect.getfile(inspect.currentframe())
 
 
 class Generator:
-    def __init__(self, base_folder: str, mapped_dir: str) -> None:
+    def __init__(self, base_folder: str, mapped_dir: str, convert: str) -> None:
         self.base_folder = base_folder
         self.mapped_dir = mapped_dir
+        self.convert_to = convert
         try:
-            generator_logger.warning("Checking if API is available")
+            generator_logger.info("Checking if API is available")
             self.fetchnator = Fetchnator()
-        except:
+        except requests.HTTPError:
             generator_logger.fatal("Could not fetch test data from API, exiting...")
             exit(0)
         self.config = json.load(open(f"{os.path.dirname(generator_module_path)}/config.json", "r"))
@@ -39,7 +41,7 @@ class Generator:
                 generator_logger.info(f"Starting to check season folder={season_dir}")
 
                 rounds_files = os.listdir(season_dir_path)
-                generator_logger.debug(f"Round files: {rounds_files}")
+                # generator_logger.debug(f"Round files: {rounds_files}")
 
                 round_metadata_files = list(
                     filter(re.compile(f".*{self.config['metadata_extension']}$").match, rounds_files))
@@ -48,10 +50,11 @@ class Generator:
                 # Check which round file is missing its metadata
                 round_with_missing_metadata = []
                 for round_file in rounds_files:
-                    if not os.path.isdir(os.path.join(season_dir_path, round_file)):
+                    if (not os.path.isdir(os.path.join(season_dir_path, round_file)) and
+                            re.findall(rf"{self.config['season_episode_format']}", round_file, flags=re.IGNORECASE)):
                         if (f"{os.path.splitext(round_file)[0]}{self.config['metadata_extension']}"
                                 not in round_metadata_files):
-                            generator_logger.info(f"Round file doesn't have metadata: {round_file}")
+                            generator_logger.debug(f"Round file doesn't have metadata: {round_file}")
                             round_with_missing_metadata.append(round_file)
 
                 if round_with_missing_metadata:
@@ -72,13 +75,24 @@ class Generator:
                             generator_logger.info(f"Checking for season={season_number}; round={round_number}")
 
                             if season_obj is None:
-                                generator_logger.info(f"Fething full Season={season_number} info")
-                                season_obj = self.fetchnator.get_season_info(season_number)
+                                generator_logger.debug(f"Fething full Season={season_number} info")
+                                try:
+                                    season_obj = self.fetchnator.get_season_info(season_number)
+                                except requests.HTTPError:
+                                    generator_logger.error(f"Could not fetch season={season_number} from API, skipping")
+                                    break
+
                             if not contains_season_metadata:
-                                season_obj.get_season_poster()
-                                generator_logger.info("Saving season to xml")
-                                season_obj.to_xml(f"{season_dir_path}/season.nfo",
-                                                  f"{self.mapped_dir}/{season_dir}")
+                                # find season artwork
+                                artwork_file_name = list(filter(re.compile("folder.*").match, rounds_files))
+                                if not artwork_file_name:
+                                    artwork_file_name = season_obj.get_season_poster()
+                                else:
+                                    artwork_file_name = artwork_file_name[0]
+                                generator_logger.debug("Saving season to xml")
+                                season_obj.to_xml(f"{season_dir_path}/season{self.config['metadata_extension']}",
+                                                  f"{self.mapped_dir}/{season_dir}",
+                                                  os.path.splitext(artwork_file_name)[1])
 
                             is_sprint = re.findall(rf"{self.config['sprint']}", round_file_name, flags=re.IGNORECASE)
                             is_quali = re.findall(rf"{self.config['quali']}", round_file_name, flags=re.IGNORECASE)
@@ -88,33 +102,33 @@ class Generator:
                             is_fp = re.findall(rf"{self.config['freePractice']}", round_file_name, flags=re.IGNORECASE)
 
                             no_ext_round = os.path.splitext(round_file_name)[0]
-                            generator_logger.info(f"Getting round number={int(round_number)}")
+                            generator_logger.debug(f"Getting round number={int(round_number)}")
                             s_round = season_obj.get_round(int(round_number) - 1)
                             round_name = s_round.race_name
                             round_date = s_round.date
 
                             if is_sprint:
-                                generator_logger.info("Sprint Round")
+                                generator_logger.debug("Sprint Round")
                                 round_name = s_round.race_name + "- Sprint"
                                 round_date = s_round.sprint_dateTime
                             elif is_quali:
-                                generator_logger.info("Qualification Round")
+                                generator_logger.debug("Qualification Round")
                                 round_name = s_round.race_name + "- Qualification"
                                 round_date = s_round.quali_dateTime
                             elif is_fp:
-                                generator_logger.info("Free practice round")
+                                generator_logger.debug("Free practice round")
                                 round_name = s_round.race_name + "- Free practice"
                                 round_date = s_round.fp1_dateTime  # will use the first practice date and time
                             elif is_fp1:
-                                generator_logger.info("Free practice 1 round")
+                                generator_logger.debug("Free practice 1 round")
                                 round_name = s_round.race_name + "- Free practice 1"
                                 round_date = s_round.fp1_dateTime
                             elif is_fp2:
-                                generator_logger.info("Free practice 2 round")
+                                generator_logger.debug("Free practice 2 round")
                                 round_name = s_round.race_name + "- Free practice 2"
                                 round_date = s_round.fp2_dateTime
                             elif is_fp3:
-                                generator_logger.info("Free practice 3 round")
+                                generator_logger.debug("Free practice 3 round")
                                 round_name = s_round.race_name + "- Free practice 3"
                                 round_date = s_round.fp3_dateTime
                             else:
@@ -123,12 +137,22 @@ class Generator:
                             if not os.path.exists(f"{season_dir_path}/metadata"):
                                 os.makedirs(f"{season_dir_path}/metadata")
 
-                            generator_logger.info("Getting poster")
-                            s_round.get_round_poster(f"{season_dir_path}/metadata/{no_ext_round}.webp")
+                            generator_logger.debug("Getting poster")
+                            try:
+                                s_round.get_round_poster(f"{season_dir_path}/metadata/{no_ext_round}.webp",
+                                                         self.convert_to)
+                            except requests.HTTPError:
+                                generator_logger.error(
+                                    f"Could not fetch round poster={season_dir_path}/metadata/{no_ext_round}.webp; "
+                                    f"Skipping..")
 
-                            generator_logger.info("Saving round to xml")
-                            s_round.to_xml(f"{season_dir_path}/{no_ext_round}.nfo",
+                            img_extension = ".webp"
+                            if self.convert_to == ImageConvertor.JPG:
+                                img_extension = ".png"
+
+                            generator_logger.debug("Saving round to xml")
+                            s_round.to_xml(f"{season_dir_path}/{no_ext_round}{self.config['metadata_extension']}",
                                            f"{self.mapped_dir}/{season_dir}", no_ext_round,
-                                           round_name, round_date)
+                                           round_name, round_date, img_extension)
                 else:
-                    generator_logger.info("No metadata missing for season={}".format(season_dir_path))
+                    generator_logger.info(f"No metadata missing for season={season_dir_path}")
