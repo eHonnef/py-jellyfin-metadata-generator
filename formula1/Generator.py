@@ -72,7 +72,7 @@ class Generator:
                                 continue
                             parsed_season = parsed_season[0]
                             season_number, round_number = re.findall(r"[0-9]+", parsed_season)
-                            generator_logger.info(f"We are checking... for season={season_number}; round={round_number}")
+                            generator_logger.info(f"Processing season={season_number}; round={round_number}")
 
                             if season_obj is None:
                                 generator_logger.debug(f"Fething full Season={season_number} info")
@@ -108,31 +108,39 @@ class Generator:
                             generator_logger.debug(f"Getting round number={int(round_number)}")
                             s_round = season_obj.get_round(int(round_number) - 1)
                             round_name = s_round.race_name
+                            round_sort = s_round.race_name + " 6"
                             round_date = s_round.date
 
                             if is_sprint:
                                 generator_logger.debug("Sprint Round")
-                                round_name = s_round.race_name + "- Sprint"
+                                round_name = s_round.race_name + " - Sprint"
+                                round_sort = s_round.race_name + " - Sprint"
+                                round_sort = s_round.race_name + " 5"
                                 round_date = s_round.sprint_dateTime
                             elif is_quali:
                                 generator_logger.debug("Qualification Round")
-                                round_name = s_round.race_name + "- Qualification"
+                                round_name = s_round.race_name + " - Qualification"
+                                round_sort = s_round.race_name + " 4"
                                 round_date = s_round.quali_dateTime
                             elif is_fp:
                                 generator_logger.debug("Free practice round")
-                                round_name = s_round.race_name + "- Free practice"
+                                round_name = s_round.race_name + " - Free practice"
+                                round_sort = s_round.race_name + " 0"
                                 round_date = s_round.fp1_dateTime  # will use the first practice date and time
                             elif is_fp1:
                                 generator_logger.debug("Free practice 1 round")
-                                round_name = s_round.race_name + "- Free practice 1"
+                                round_name = s_round.race_name + " - Free practice 1"
+                                round_sort = s_round.race_name + " 1"
                                 round_date = s_round.fp1_dateTime
                             elif is_fp2:
                                 generator_logger.debug("Free practice 2 round")
-                                round_name = s_round.race_name + "- Free practice 2"
+                                round_name = s_round.race_name + " - Free practice 2"
+                                round_sort = s_round.race_name + " 2"
                                 round_date = s_round.fp2_dateTime
                             elif is_fp3:
                                 generator_logger.debug("Free practice 3 round")
-                                round_name = s_round.race_name + "- Free practice 3"
+                                round_name = s_round.race_name + " - Free practice 3"
+                                round_sort = s_round.race_name + " 3"
                                 round_date = s_round.fp3_dateTime
                             else:
                                 generator_logger.debug("No special naming in the file, considering as the race")
@@ -155,7 +163,11 @@ class Generator:
 
                             generator_logger.debug("Saving round to xml")
                             s_round.to_xml(f"{season_dir_path}/{no_ext_round}{self.config['metadata_extension']}",
-                                           f"{self.mapped_dir}/{season_dir}", no_ext_round,
-                                           round_name, round_date, img_extension)
+                                           f"{self.mapped_dir}/{season_dir}",
+                                           no_ext_round,
+                                           round_name,
+                                           round_sort,
+                                           round_date,
+                                           img_extension)
                 else:
                     generator_logger.info(f"No metadata missing for season={season_dir_path}")

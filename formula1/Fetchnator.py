@@ -109,9 +109,10 @@ class RoundInfo:
         page_key = list(json.loads(res.content)["query"]["pages"].keys())[0]
         return json.loads(res.content)["query"]["pages"][page_key]["extract"]
 
-    def to_xml(self, xml_filename, mapped_dir, round_filename, title, aired, artwork_img_ext):
+    def to_xml(self, xml_filename, mapped_dir, round_filename, title, sort_title, aired, artwork_img_ext):
         round_xml = ET.parse(f"{os.path.dirname(module_path)}/nfo-template/episode.nfo")
         round_xml.getroot().findall("./title")[0].text = title
+        round_xml.getroot().findall("./sorttitle")[0].text = sort_title
         round_xml.getroot().findall("./season")[0].text = self.season
         round_xml.getroot().findall("./episode")[0].text = self.round
         round_xml.getroot().findall("./plot")[0].text = self.race_description
@@ -124,6 +125,13 @@ class RoundInfo:
         round_xml.write(xml_filename)
 
     def get_round_poster(self, filename: str, convert: str):
+        if convert == ImageConvertor.JPG:
+            filename = os.path.splitext(filename)[0] + ".jpg"
+
+        if os.path.exists(filename):
+            fetchnator_logger.info(f"Poster already exists, no need to fetch")
+            return
+
         round_date = datetime.strftime(datetime.fromisoformat(self.date), "%Y-%m-%d")
 
         circuit_id = f"{round_date}-{self.circuit_id}"
@@ -140,7 +148,6 @@ class RoundInfo:
         if resp.headers["Content-Type"] == "image/webp":
             image_bytes = resp.content
             if convert == ImageConvertor.JPG:
-                filename = os.path.splitext(filename)[0] + ".jpg"
                 image_bytes = ImageConvertor.convert_webp_to_jpg(resp)
             with open(filename, "wb") as out_image:
                 out_image.write(image_bytes)
