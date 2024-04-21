@@ -14,6 +14,7 @@ from datetime import datetime
 import logging
 
 fetchnator_logger = logging.getLogger('Fetchnator')
+fetchnator_logger.setLevel(logging.INFO)
 
 module_path = inspect.getfile(inspect.currentframe())
 
@@ -91,6 +92,7 @@ class RoundInfo:
                 f"\n{self.race_description}")
 
     def _get_round_info(self):
+        fetchnator_logger.info(f"Getting data from wikipedia for round={self.round}")
         res = requests.get(
             f"https://en.wikipedia.org/w/api.php?action=query"
             f"&prop=extracts"
@@ -99,7 +101,8 @@ class RoundInfo:
             f"&exsectionformat=plain"
             f"&format=json"
             f"&titles={self.season} {self.race_name}"
-            f"&explaintext=1"
+            f"&explaintext=1",
+            timeout=2
         )
         res.raise_for_status()
 
@@ -129,7 +132,7 @@ class RoundInfo:
         elif self.circuit_id in database.database.keys():
             circuit_id = f"{round_date}-{database.database[self.circuit_id]}"
         fetchnator_logger.info(
-            f"fetching url=https://www.eventartworks.de/images/f1@1200/{circuit_id}.webp")
+            f"Getting poster from url=https://www.eventartworks.de/images/f1@1200/{circuit_id}.webp")
         resp = requests.get(f"https://www.eventartworks.de/images/f1@1200/{circuit_id}.webp",
                             stream=True)
         resp.raise_for_status()
@@ -180,6 +183,7 @@ class Season:
         pass
 
     def _get_season_info(self):
+        fetchnator_logger.info(f"Getting data from wikipedia for season={self.season}")
         res = requests.get(
             f"https://en.wikipedia.org/w/api.php?action=query"
             f"&prop=extracts"
@@ -188,7 +192,8 @@ class Season:
             f"&exsectionformat=plain"
             f"&format=json"
             f"&titles={self.season}%20Formula%20One%20World%20Championship"
-            f"&explaintext=1"
+            f"&explaintext=1",
+            timeout=2
         )
         res.raise_for_status()
 
@@ -227,7 +232,8 @@ class Fetchnator:
             return rtn_str
 
         res = requests.get(
-            f"{self.api_base}/{year}.json"
+            f"{self.api_base}/{year}.json",
+            timeout=10
         )
         res.raise_for_status()
 
