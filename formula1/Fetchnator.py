@@ -122,7 +122,7 @@ class RoundInfo:
         round_xml.getroot().findall("./art/poster")[
             0].text = f"{mapped_dir}/metadata/{round_filename}{artwork_img_ext}"
 
-        round_xml.write(xml_filename)
+        round_xml.write(xml_filename, encoding="utf-8", xml_declaration=True)
 
     def get_round_poster(self, filename: str, convert: str):
         if convert == ImageConvertor.JPG:
@@ -184,7 +184,7 @@ class Season:
         season_xml.getroot().findall("./seasonnumber")[0].text = self.season
         season_xml.getroot().findall("./art/poster")[0].text = f"{mapped_dir}/folder{artwork_img_ext}"
 
-        season_xml.write(filename)
+        season_xml.write(filename, encoding="utf-8", xml_declaration=True)
 
     def get_season_poster(self):
         pass
