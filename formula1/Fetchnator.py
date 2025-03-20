@@ -209,7 +209,7 @@ class Season:
 
 
 class Fetchnator:
-    def __init__(self, api="http://ergast.com/api/f1"):
+    def __init__(self, api="https://api.jolpi.ca/ergast/f1"):
         self.api_base = api
         # Test API connection
         requests.get(f"{self.api_base}/2011.json").raise_for_status()
