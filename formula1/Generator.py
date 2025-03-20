@@ -92,6 +92,11 @@ class Generator:
                                     artwork_file_name = season_obj.get_season_poster()
                                 else:
                                     artwork_file_name = artwork_file_name[0]
+
+                                if not artwork_file_name:
+                                    generator_logger.error("Currently artwork is not fetched, it is required to be manually added to each folder/directory with name 'folder.jpg'")
+                                    exit(1)
+
                                 generator_logger.debug("Saving season to xml")
                                 season_obj.to_xml(f"{season_dir_path}/season{self.config['metadata_extension']}",
                                                   f"{self.mapped_dir}/{season_dir}",
