@@ -173,7 +173,26 @@ class Season:
     def get_round(self, index) -> RoundInfo:
         return self.rounds[index]
 
+    def to_xml_without_artwork(self, filename: str):
+        season_xml = self._build_season_xml()
+
+        # Remove the art element, since it contains a path to a non-exising location in fs
+        art_element = season_xml.getroot().find("./art")
+        season_xml.getroot().remove(art_element)
+
+        season_xml.write(filename, encoding="utf-8", xml_declaration=True)
+
     def to_xml(self, filename: str, mapped_dir, artwork_img_ext):
+        season_xml = self._build_season_xml()
+        season_xml.getroot().findall("./art/poster")[0].text = f"{mapped_dir}/folder{artwork_img_ext}"
+
+        season_xml.write(filename, encoding="utf-8", xml_declaration=True)
+
+    def _build_season_xml(self) -> ET.ElementTree:
+        """
+        Generates the XML elements needed for the season, without the art poster.
+        :return: ElementTree
+        """
         season_xml = ET.parse(f"{os.path.dirname(module_path)}/nfo-template/season.nfo")
         season_xml.getroot().findall("./plot")[0].text = self.season_info
         season_xml.getroot().findall("./dateadded")[0].text = date.today().isoformat()
@@ -182,9 +201,8 @@ class Season:
         season_xml.getroot().findall("./premiered")[0].text = self.start_date
         season_xml.getroot().findall("./enddate")[0].text = self.end_date
         season_xml.getroot().findall("./seasonnumber")[0].text = self.season
-        season_xml.getroot().findall("./art/poster")[0].text = f"{mapped_dir}/folder{artwork_img_ext}"
 
-        season_xml.write(filename, encoding="utf-8", xml_declaration=True)
+        return season_xml
 
     def get_season_poster(self):
         pass

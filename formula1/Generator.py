@@ -93,12 +93,20 @@ class Generator:
                                 else:
                                     artwork_file_name = artwork_file_name[0]
 
+                                # Check if the artwork is found
                                 if not artwork_file_name:
-                                    generator_logger.error("Currently artwork is not fetched, it is required to be manually added to each folder/directory with name 'folder.jpg'")
-                                    exit(1)
+                                    generator_logger.warning(
+                                        f"Season={season_number} artwork was not fetched, it is required to be manually added to your season folder={season_dir_path} as 'folder.jpg'"
+                                    )
 
-                                generator_logger.debug("Saving season to xml")
-                                season_obj.to_xml(f"{season_dir_path}/season{self.config['metadata_extension']}",
+                                    # Save to XML without the artwork
+                                    generator_logger.debug("Saving season to xml")
+                                    season_obj.to_xml_without_artwork(f"{season_dir_path}/season{self.config['metadata_extension']}")
+
+                                else:
+                                    generator_logger.debug("Saving season to xml")
+                                    # Save to XML with the artwork
+                                    season_obj.to_xml(f"{season_dir_path}/season{self.config['metadata_extension']}",
                                                   f"{self.mapped_dir}/{season_dir}",
                                                   os.path.splitext(artwork_file_name)[1])
 
