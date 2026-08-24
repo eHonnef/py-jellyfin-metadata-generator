@@ -150,9 +150,12 @@ class RoundInfo:
 
         fetchnator_logger.info(
             f"Getting round poster from url=https://www.eventartworks.de/images/f1@1200/{circuit_id}.webp")
-        resp = requests.get(f"https://www.eventartworks.de/images/f1@1200/{circuit_id}.webp", stream=True)
-
-        use_default = resp.status_code != 200
+        try:
+            resp = requests.get(f"https://www.eventartworks.de/images/f1@1200/{circuit_id}.webp", stream=True)
+            use_default = resp.status_code != 200
+        except requests.RequestException as err:
+            fetchnator_logger.warning(f"Could not reach eventartworks.de for the round poster: {err}")
+            use_default = True
 
         if not use_default:
             if resp.headers["Content-Type"] == "image/webp":
