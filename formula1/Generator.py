@@ -189,7 +189,7 @@ class Generator:
                             try:
                                 s_round.get_round_poster(f"{season_dir_path}/metadata/{no_ext_round}.webp",
                                                          self.convert_to)
-                            except requests.HTTPError:
+                            except requests.RequestException:
                                 generator_logger.error(
                                     f"Could not fetch round poster={season_dir_path}/metadata/{no_ext_round}.webp; "
                                     f"Skipping..")
